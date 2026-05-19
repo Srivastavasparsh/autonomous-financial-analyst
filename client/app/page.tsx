@@ -21,7 +21,7 @@ export default function Home() {
     setData(null);
 
     try {
-      const response = await fetch("https://fintech-ai-backend-r7w0.onrender.com/analyze"  {
+      const response = await fetch("https://fintech-ai-backend-r7w0.onrender.com/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ticker: ticker.toUpperCase() }),
