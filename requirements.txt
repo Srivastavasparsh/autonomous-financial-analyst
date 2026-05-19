@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+langchain
+langchain-groq
+langgraph
+yfinance
+duckduckgo-search
+python-dotenv
+pydantic
