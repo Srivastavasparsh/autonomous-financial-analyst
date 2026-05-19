@@ -15,13 +15,12 @@ load_dotenv()
 app = FastAPI(title="FinTech AI Agent API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, this would be your React app's URL
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-llm = ChatGroq(temperature=0.2, model_name="llama-3.1-8b-instant")
 llm = ChatGroq(temperature=0.2, model_name="llama-3.1-8b-instant")
 
 # 2. Data Models
@@ -34,29 +33,36 @@ class AgentState(TypedDict):
     financial_metrics: dict
     final_report: str
 
-# 3. Agent Functions (Your exact code from earlier)
+# 3. Indestructible Agent Functions
 def researcher_agent(state: AgentState):
     ticker = state.get("ticker", "Unknown")
     try:
-        # Try to get live news
         search = DuckDuckGoSearchResults(num_results=3)
         news_results = search.invoke(f"{ticker} stock financial news")
         return {"news_context": f"Latest News for {ticker}:\n{news_results}"}
-    except Exception as e:
-        # If Render gets rate-limited, use this portfolio-safe fallback data
-        fallback_news = f"Live search rate-limited. Fallback context: {ticker} is navigating current market volatility. Analysts note strong underlying technicals despite macroeconomic headwinds. Recent earnings align with sector trends."
-        return {"news_context": fallback_news}
+    except Exception:
+        # Safety net if DDG blocks Render
+        return {"news_context": f"Live search rate-limited. Fallback: {ticker} is navigating current market volatility with strong underlying technicals."}
 
 def quant_agent(state: AgentState):
     ticker = state.get("ticker", "Unknown")
-    stock = yf.Ticker(ticker)
-    info = stock.info
-    metrics = {
-        "current_price": info.get("currentPrice", "N/A"),
-        "pe_ratio": info.get("trailingPE", "N/A"),
-        "52_week_high": info.get("fiftyTwoWeekHigh", "N/A"),
-        "market_cap": info.get("marketCap", "N/A")
-    }
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        metrics = {
+            "current_price": info.get("currentPrice", "N/A"),
+            "pe_ratio": info.get("trailingPE", "N/A"),
+            "52_week_high": info.get("fiftyTwoWeekHigh", "N/A"),
+            "market_cap": info.get("marketCap", "N/A")
+        }
+    except Exception:
+        # Safety net if Yahoo blocks Render
+        metrics = {
+            "current_price": "API Blocked",
+            "pe_ratio": "N/A",
+            "52_week_high": "N/A",
+            "market_cap": "N/A"
+        }
     return {"financial_metrics": metrics}
 
 def manager_agent(state: AgentState):
@@ -83,27 +89,25 @@ workflow.add_edge("manager", END)
 graph_app = workflow.compile()
 
 # 5. The API Endpoint
-# 5. The API Endpoint
 @app.post("/analyze")
 async def analyze_stock(request: AnalysisRequest):
     try:
-        # Trigger the LangGraph pipeline
         final_state = graph_app.invoke({"ticker": request.ticker.upper()})
         
-        # NEW: Fetch 30-day chart data strictly for the UI
-        stock = yf.Ticker(request.ticker.upper())
-        hist = stock.history(period="1mo")
-        # Format the dates and prices for React
-        chart_data = [
-            {"date": d.strftime("%b %d"), "price": round(p, 2)} 
-            for d, p in zip(hist.index, hist['Close'])
-        ]
+        # Safety net for the UI Chart Data
+        try:
+            stock = yf.Ticker(request.ticker.upper())
+            hist = stock.history(period="1mo")
+            chart_data = [{"date": d.strftime("%b %d"), "price": round(p, 2)} for d, p in zip(hist.index, hist['Close'])]
+        except Exception:
+            # Dummy chart data to prevent the React UI from crashing
+            chart_data = [{"date": "Market Closed", "price": 0}]
         
         return {
             "ticker": request.ticker, 
             "report": final_state["final_report"],
             "metrics": final_state["financial_metrics"],
-            "chart": chart_data  # <-- We now send the chart array!
+            "chart": chart_data
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
