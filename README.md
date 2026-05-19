@@ -19,9 +19,8 @@ This project utilizes the **Full-Stack AI** pattern, separating the inference en
   3. **Manager Agent:** An ultra-low latency Llama 3 LLM (via Groq) that synthesizes the data into a Markdown-formatted investment thesis.
 
 ## ⚡ Live Demo
-* **Frontend:** [Insert your Vercel URL here]
-* **Backend API:** [Insert your Render URL here]
-
+* **Frontend Application:** [https://autonomous-financial-analyst-liart.vercel.app](https://autonomous-financial-analyst-liart.vercel.app)
+* **Backend API (Render):** [https://fintech-ai-backend-r7w0.onrender.com](https://fintech-ai-backend-r7w0.onrender.com)
 ## 🛠️ Local Installation
 
 ### 1. Clone the Repository
