@@ -7,3 +7,4 @@ yfinance
 duckduckgo-search
 python-dotenv
 pydantic
+langchain-community
